@@ -36,6 +36,12 @@ def bezier_curve(points, nTimes=1000):
 
     return res_points.transpose()
 
+def draw_curve(img,pts):
+    # print("pts.shape", pts_interp.shape)
+    # print(pts_interp[:10,:,:])
+    pts = pts.reshape((-1,1,2))
+    img = cv2.polylines(img, [pts_interp], False, (255,0,0), 2)
+    return img
 
 def click_and_draw_point(event, x, y, flags, param):
 	# grab references to the global variables
@@ -47,11 +53,12 @@ def click_and_draw_point(event, x, y, flags, param):
         pt_list.append((x,y))
 	# check to see if the left mouse button was released
 	
-def draw_curve(img,pts):
-    # print("pts.shape", pts_interp.shape)
-    # print(pts_interp[:10,:,:])
-    pts = pts.reshape((-1,1,2))
-    img = cv2.polylines(img, [pts_interp], False, (255,0,0), 2)
+def place_background(img, background_tex):
+    w_tile, h_tile, c_tile = background_tex.shape
+    for i in range(w//h_tile):
+        for j in range( h//h_tile):
+            print((i,j))
+            img[i*w_tile: (i+1)*w_tile, j*h_tile:(j+1)*h_tile,:] = background_tex
     return img
 
 def place_texture_tiles(img, path_tex, background_tex, curve):
@@ -74,9 +81,6 @@ def place_texture_tiles(img, path_tex, background_tex, curve):
             print((i,j))
             if grid[i,j]==1:
                 img[i*w_texture: (i+1)*w_texture, j*h_texture:(j+1)*h_texture,:] = path_tex
-            else:
-                img[i*w_texture: (i+1)*w_texture, j*h_texture:(j+1)*h_texture,:] = background_tex
-
     return img
 
 
@@ -92,13 +96,16 @@ if __name__ == "__main__":
     print(path_tex.shape)
     path_tex = cv2.resize(path_tex, (50,50))
     bg_tex = cv2.resize(bg_tex, (50,50))
-    cv2.imshow("test", img)
     cv2.moveWindow("test", 0, 0)
+    img = place_background(img, bg_tex)
+    cv2.imshow("test", img)
 
     while(1):
-        if cv2.waitKey(0) == ord('q'):
+        key = cv2.waitKey()
+        if key == ord('q'):
             break
-        if cv2.waitKey(0) == ord('d'):
+        if key == ord('d') and len(pt_list)!=0 :
+            img = place_background(img, bg_tex)
             pts = np.array(pt_list, np.int32)
             pts_interp = bezier_curve(pts, nTimes=1000)
             img = place_texture_tiles(img, path_tex, bg_tex, pts_interp)
