@@ -49,6 +49,7 @@ def get_connected_comp(mask, threshold, verbose=False) -> List[Rock]:
         (numLabels, labels, stats, centroids) = output
     
     rocks:List[Rock] = []
+    rock_matrix = np.zeros(mask.shape)
     for i in range(0, numLabels):
         # if this is the first component then we examine the
         # *background* (typically we would just ignore this
@@ -61,17 +62,23 @@ def get_connected_comp(mask, threshold, verbose=False) -> List[Rock]:
             else:
                 text = "examining component {}/{}".format( i + 1, numLabels)
             print("[INFO] {}".format(text))
-            
-        x = stats[i, cv2.CC_STAT_LEFT]
-        y = stats[i, cv2.CC_STAT_TOP]
-        w = stats[i, cv2.CC_STAT_WIDTH]
-        h = stats[i, cv2.CC_STAT_HEIGHT]
-        area = stats[i, cv2.CC_STAT_AREA]
-                
-        componentMask = (labels == i).astype("uint8")
         
-        if area > threshold:
-            rocks.append(Rock(i, componentMask, x, y, w, h, area, centroids[i]))
+        if i!=0: 
+            x = stats[i, cv2.CC_STAT_LEFT]
+            y = stats[i, cv2.CC_STAT_TOP]
+            w = stats[i, cv2.CC_STAT_WIDTH]
+            h = stats[i, cv2.CC_STAT_HEIGHT]
+            area = stats[i, cv2.CC_STAT_AREA]
+                    
+            componentMask = (labels == i).astype("uint8")*255
+            # componentMask = cv2.cvtColor(componentMask,cv2.COLOR_GRAY2BGR)
             
+            if area > threshold:
+                rocks.append(Rock(i, componentMask, x, y, w, h, area, centroids[i]))
+                x, y = x + int(w/2), y + int(h/2)
+                if 0<y<rock_matrix.shape[0] and 0<x<rock_matrix.shape[1]:
+                    rock_matrix[y, x] = 1
+                
     print("tot rocks:", len(rocks))
-    return rocks
+
+    return rocks, rock_matrix

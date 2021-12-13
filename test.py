@@ -8,28 +8,41 @@ from seg_tools import *
 
 logging.basicConfig(level=logging.INFO)
 
-tex_tile = cv2.imread("datas/Textures/freeTexture3.png")
-# tex_tile = cv2.cvtColor(tex_tile_color, cv2.COLOR_BGR2RGB)
-
 w = 800
 h = 1000
-pt_list = []
-cv2.namedWindow("test")
-img = np.zeros((w,h,3), np.uint8)
-tex_tile = cv2.resize(tex_tile, (200,200))
-img = place_background(img, tex_tile)
 
-segmented_img = segment(img)
-rocks = get_connected_comp(segmented_img, threshold=30)
-rock_matrix = np.zeros(segmented_img.shape)
+tex_tile = cv2.imread("datas/Textures/freeTexture3.png")
+tex_tile = cv2.resize(tex_tile, (200,200))
+bg_tex = cv2.imread("datas/Textures/freeTexture2.png")
+bg_tex = cv2.resize(bg_tex, (200,200))
+
+# tex_tile = cv2.cvtColor(tex_tile_color, cv2.COLOR_BGR2RGB)
+img = np.zeros((w,h,3), np.uint8)
+img = place_background(img, bg_tex)
+
+background_tex = np.zeros((w,h,3), np.uint8)
+background_tex = place_background(background_tex, tex_tile)
+
+
+segmented_img = segment(background_tex)
+rocks, rocks_matrix = get_connected_comp(segmented_img, threshold=30)
+
+curve = [(i,500) for i in range(100, 800)]
+img = place_texture_rocks(img, rocks, rocks_matrix, background_tex, curve, size=100)
+
 # for rock in rocks:
+#     print(rock.id)
 #     i, j = rock.x + int(rock.w/2), rock.y + int(rock.h/2)
-#     cv2.circle(img,(i,j),5,(0,255,0),cv2.FILLED)
-#     if 0<i<rock_matrix.shape[0] and 0<j<rock_matrix.shape[1]:
-#         rock_matrix[i,j] = 1
+#     cv2.circle(background_tex,(i,j),5,(0,255,0),cv2.FILLED)
+#     # cv2.imshow("test", background_tex)
+
+#     inv_mask = cv2.bitwise_not(rock.mask)
+#     img = cv2.bitwise_and(img, img, mask=inv_mask)
+#     img += cv2.bitwise_and(background_tex, background_tex, mask=rock.mask)
         
-# cv2.imshow("test", segmented_img*255)
-# cv2.imshow("test_loc", img)
+# cv2.imshow("test_mask", inv_mask)
+cv2.imshow("test_loc", img)
+
 
 
 
