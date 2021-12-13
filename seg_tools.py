@@ -1,0 +1,71 @@
+import cv2
+import numpy as np
+import logging
+from dataclasses import dataclass
+from typing import Tuple
+
+@dataclass
+class Rock:
+    id: int
+    mask: np.ndarray
+    x: int
+    y: int
+    w: int
+    h: int
+    area: int
+    centroid: Tuple[int, int]
+
+
+def segment(img):
+    pix_values = img.reshape((-1,3))
+    pix_values = np.float32(pix_values)
+
+    # define stopping criteria
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.2)
+
+    # number of clusters (K)
+    k = 2
+    _, labels, (centers) = cv2.kmeans(pix_values, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+
+    # convert back to 8 bit values
+    centers = np.uint8(centers)
+    
+    # convert all pixels to the color of the centroids
+    mask = np.uint8(labels.reshape(tex_tile.shape[:2]))
+    # Invert labels
+    mask = abs((mask-1))
+    
+    return mask
+
+def get_connected_comp(mask, threshold, verbose=False):
+    # apply connected component analysis to the thresholded image
+    output = cv2.connectedComponentsWithStats(
+        (mask), connectivity=8, ltype=cv2.CV_32S)
+    (numLabels, labels, stats, centroids) = output
+    
+    rocks = []
+    for i in range(0, numLabels):
+        # if this is the first component then we examine the
+        # *background* (typically we would just ignore this
+        # component in our loop)
+        if verbose:
+            if i == 0:
+                text = "examining component {}/{} (background)".format(
+                    i + 1, numLabels)
+            # otherwise, we are examining an actual connected component
+            else:
+                text = "examining component {}/{}".format( i + 1, numLabels)
+            print("[INFO] {}".format(text))
+            
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+                
+        componentMask = (labels == i).astype("uint8")
+        
+        if area > threshold:
+            rocks.append(Rock(i, componentMask, x, y, w, h, area, centroids[i]))
+            
+    print("tot rocks:", len(rocks))
