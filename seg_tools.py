@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import logging
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, List
 
 @dataclass
 class Rock:
@@ -31,19 +31,24 @@ def segment(img):
     centers = np.uint8(centers)
     
     # convert all pixels to the color of the centroids
-    mask = np.uint8(labels.reshape(tex_tile.shape[:2]))
-    # Invert labels
-    mask = abs((mask-1))
+    mask = np.uint8(labels.reshape(img.shape[:2]))
+        
+    # segmented_image = centers[labels.flatten()].reshape(tex_tile.shape)
     
     return mask
 
-def get_connected_comp(mask, threshold, verbose=False):
+def get_connected_comp(mask, threshold, verbose=False) -> List[Rock]:
     # apply connected component analysis to the thresholded image
     output = cv2.connectedComponentsWithStats(
         (mask), connectivity=8, ltype=cv2.CV_32S)
     (numLabels, labels, stats, centroids) = output
+    if numLabels < 10:
+        mask = abs((mask-1))
+        output = cv2.connectedComponentsWithStats(
+            (mask), connectivity=8, ltype=cv2.CV_32S)
+        (numLabels, labels, stats, centroids) = output
     
-    rocks = []
+    rocks:List[Rock] = []
     for i in range(0, numLabels):
         # if this is the first component then we examine the
         # *background* (typically we would just ignore this
@@ -69,3 +74,4 @@ def get_connected_comp(mask, threshold, verbose=False):
             rocks.append(Rock(i, componentMask, x, y, w, h, area, centroids[i]))
             
     print("tot rocks:", len(rocks))
+    return rocks
