@@ -37,16 +37,17 @@ def segment(img):
     
     return mask
 
-def get_connected_comp(mask, threshold, verbose=False) -> List[Rock]:
+def get_connected_comp(mask, threshold, verbose=False, inv=False) -> List[Rock]:
     # apply connected component analysis to the thresholded image
+    if inv:
+        print("inversion des labels")
+        mask = abs((mask-1))
+    
     output = cv2.connectedComponentsWithStats(
         (mask), connectivity=8, ltype=cv2.CV_32S)
     (numLabels, labels, stats, centroids) = output
-    if numLabels < 10:
-        mask = abs((mask-1))
-        output = cv2.connectedComponentsWithStats(
-            (mask), connectivity=8, ltype=cv2.CV_32S)
-        (numLabels, labels, stats, centroids) = output
+
+    print("nb connex comp:",numLabels)
     
     rocks:List[Rock] = []
     rock_matrix = np.zeros(mask.shape)
